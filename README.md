@@ -1,3 +1,26 @@
+# How to Use this Repo
+
+Download this repository to a local directory on your machine.
+In a terminal, navigate to that directory and run:
+
+### 'npm install'
+
+and then run:
+
+### 'npm start'
+
+and this app should open in your default browser.
+
+If for whatever reason the app doesn't open automatically, simply run:
+
+### http://localhost:3000
+
+in your browser address bar.
+
+Criteria for this app can be found in the codetest.pdf file
+in the head directory of this repository.
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
