@@ -226,6 +226,12 @@ class UserDisplay extends Component {
       return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
     });
 
+    // This loop generates each user a unique key for rendering, however,
+    //   it would be ideal if the back-end supplied these keys
+    for (let i = 0; i < consolidatedResults.length; i++) {
+      consolidatedResults[i].key = i;
+    }
+
     this.setState({
       users: consolidatedResults,
       displayedUsers: consolidatedResults,
@@ -281,9 +287,9 @@ class UserDisplay extends Component {
       <div>
         { displayTable
           ? <div className="table">
-            {list.map((user,index) =>
+            {list.map((user) =>
               <div
-                key={index}
+                key={user.key}
                 className="table-row"
                 onClick={() => this.onMoreInfo(user)}
               >
