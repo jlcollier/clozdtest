@@ -17,6 +17,8 @@ const USER_SEED = 'abc';
 const MAX_USERS_PER_FETCH = 5000; // how many users the API will give us at a time, max
 const USERS_DESIRED = 7000;       // how many users we need for our app
 
+const ENTER_KEYCODE = 13;
+
 class App extends Component {
 
   constructor(props) {
@@ -80,6 +82,7 @@ class Search extends Component {
 
     this.onValueChange = this.onValueChange.bind(this);
     this.onButtonClick = this.onButtonClick.bind(this);
+    this.onKeyPress = this.onKeyPress.bind(this)
   }
 
   onValueChange(event) {
@@ -97,6 +100,13 @@ class Search extends Component {
     this.props.triggerFilter(this.state.value);
   }
 
+  onKeyPress(event) {
+    const code = event.keyCode || event.which;
+    if(code === ENTER_KEYCODE) {
+        this.onButtonClick()
+    }
+  }
+
   render() {
     const {
       value,
@@ -112,6 +122,7 @@ class Search extends Component {
           placeholder={placeholder}
           type="text"
           onChange={this.onValueChange}
+          onKeyPress={this.onKeyPress}
           value={value}
         />
         <Button
