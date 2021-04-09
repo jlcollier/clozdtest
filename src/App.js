@@ -23,10 +23,129 @@ class App extends Component {
     super(props);
 
     this.state = {
-      users: null,
-      displayedUsers: null,
       filterTerm: '',
       error: null,
+    }
+
+    this.onFilterChange = this.onFilterChange.bind(this);
+    this.onError = this.onError.bind(this);
+  }
+
+  onFilterChange(filterTerm) {
+    this.setState({ filterTerm: filterTerm });
+  }
+
+  onError(error) {
+    this.setState({ error })
+  }
+
+  render() {
+    const {
+      filterTerm,
+      error,
+    } = this.state;
+
+    return (
+      <div className="page">
+        { error
+          ? <div className="error">
+            <p>Something went wrong. Please refresh the page.</p>
+          </div>
+          : <div>
+            <Search
+              triggerFilter={this.onFilterChange}
+            >
+              Filter results by either first or last name:
+            </Search>
+            <UserDisplay
+              filterTerm={filterTerm}
+              onError={this.onError}
+            />
+          </div>
+        }
+      </div>
+    );
+  }
+}
+
+class Search extends Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      value: '',
+      placeholder: '',
+    }
+
+    this.onValueChange = this.onValueChange.bind(this);
+    this.onButtonClick = this.onButtonClick.bind(this);
+  }
+
+  onValueChange(event) {
+    let value = event.target.value;
+    this.setState({ value: value });
+  }
+
+  onButtonClick() {
+    if (this.state.value === '') {
+      this.setState({ placeholder: ''});
+    } else {
+      this.setState({ placeholder: 'Show All Users'});
+    }
+
+    this.props.triggerFilter(this.state.value);
+  }
+
+  render() {
+    const {
+      value,
+      placeholder,
+    } = this.state;
+
+    return (
+      <div className="filter">
+        <div className="filter-title">
+          {this.props.children}
+        </div>
+        <input
+          placeholder={placeholder}
+          type="text"
+          onChange={this.onValueChange}
+          value={value}
+        />
+        <Button
+          onClick={this.onButtonClick}
+        >
+          Filter
+        </Button>
+      </div>
+    );
+  }
+}
+
+const Button = ({
+  onClick,
+  children,
+}) =>
+  <button
+    onClick={onClick}
+    className="button"
+    type="button"
+  >
+    {children}
+  </button>
+
+class UserDisplay extends Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      users: null,
+      displayedUsers: null,
+      displayTable: false,
+      filterTerm: this.props.filterTerm,
     }
 
     this.fetchUsers = this.fetchUsers.bind(this);
@@ -39,12 +158,19 @@ class App extends Component {
     this.fetchUsers();
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.filterTerm !== prevProps.filterTerm) {
+      this.onFilterChange(this.props.filterTerm);
+    }
+  }
+
   // Ideally, the back-end would allow me to get all users on a single request...
   //   but as the API allows me to get a max of MAX_USERS_PER_FETCH users, and I need USERS_DESIRED,
   //   I may need to do more than one fetch. This is a little awkward, but given the situation and
   //   how I wanted to implement this page (all users at once, alphebetized), I
   //   feel like this function and determineFetches() implement the best solution.
   fetchUsers() {
+
     const fetchQuantityTuple = determineFetches(USERS_DESIRED, MAX_USERS_PER_FETCH);
     const apiRequestQuantity = fetchQuantityTuple[0];
     const usersPerFetch = fetchQuantityTuple[1];
@@ -71,7 +197,7 @@ class App extends Component {
 
     Promise.all(promiseCatcher)
       .then(responses => this.setUsers(responses))
-      .catch(error => this.setState({ error }));
+      .catch(error => this.props.onError(error));
   }
 
   setUsers(responses) {
@@ -89,7 +215,11 @@ class App extends Component {
       return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
     });
 
-    this.setState({ users: consolidatedResults, displayedUsers: consolidatedResults });
+    this.setState({
+      users: consolidatedResults,
+      displayedUsers: consolidatedResults,
+      displayTable: true,
+    });
   }
 
   onMoreInfo(user) {
@@ -110,9 +240,7 @@ class App extends Component {
     newWindow.document.close();
   }
 
-  onFilterChange(event) {
-    let term = event.target.value;
-    this.setState({ filterTerm: term });
+  onFilterChange(term) {
 
     term = term.toLowerCase();
 
@@ -127,87 +255,50 @@ class App extends Component {
       }
     });
 
-    this.setState({ displayedUsers: filteredArray });
+    this.setState({ displayedUsers: filteredArray, filterTerm: term });
   }
 
   render() {
     const {
+      displayTable,
       displayedUsers,
-      filterTerm,
-      error
     } = this.state;
 
     const list = displayedUsers || [];
 
     return (
-      <div className="page">
-        { error
-          ? <div className="error">
-            <p>Something went wrong.</p>
-          </div>
-          : <div>
-            <Search
-              value={filterTerm}
-              onChange={this.onFilterChange}
-            >
-              Filter results by either first or last name:
-            </Search>
-            { displayedUsers
-              ? <Table
-                list={list}
-                onClickRow={this.onMoreInfo}
-              />
-              : <div className="spinner">
-                <ClipLoader
-                  loading={!displayedUsers}
-                  size={150}
-                />
+      <div>
+        { displayTable
+          ? <div className="table">
+            {list.map((user,index) =>
+              <div
+                key={index}
+                className="table-row"
+                onClick={() => this.onMoreInfo(user)}
+              >
+                <span style={{ width: '40%' }}>
+                  {user.name.first + ' ' + user.name.last}
+                </span>
+                <span style={{ width: '40%' }}>
+                  {user.email}
+                </span>
+                <span style={{ width: '20%' }}>
+                  {user.location.city + ', ' + user.location.country}
+                </span>
               </div>
-            }
+            )}
+          </div>
+          : <div className="spinner">
+            <ClipLoader
+              loading={!displayTable}
+              size={150}
+            />
           </div>
         }
       </div>
     );
   }
 }
-
-const Table = ({ list, onClickRow }) =>
-  <div className="table">
-    {list.map((user,index) =>
-      <div
-        key={index}
-        className="table-row"
-        onClick={() => onClickRow(user)}
-      >
-        <span style={{ width: '40%' }}>
-          {user.name.first + ' ' + user.name.last}
-        </span>
-        <span style={{ width: '40%' }}>
-          {user.email}
-        </span>
-        <span style={{ width: '20%' }}>
-          {user.location.city + ', ' + user.location.country}
-        </span>
-      </div>
-    )}
-  </div>
-
-const Search = ({
-  value,
-  onChange,
-  children
-}) =>
-  <div className="filter">
-    <div className="filter-title">
-      {children}
-    </div>
-    <input
-      type="text"
-      onChange={onChange}
-      value={value}
-    />
-  </div>
-
 
 // be wary of excluding address unit numbers from the full address:
 //   to my knowledge, the API doesn't have unit numbers available
